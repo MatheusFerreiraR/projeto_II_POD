@@ -1,0 +1,11 @@
+# depslib dependency file v1.0
+1558223300 source:c:\users\matheuscrf\google drive\4_periodo\pesquisa_ordenacao\projeto_2_pod_merge_externo\main.c
+	"mergeExterno.h"
+
+1558223287 c:\users\matheuscrf\google drive\4_periodo\pesquisa_ordenacao\projeto_2_pod_merge_externo\mergeexterno.h
+
+1558239040 source:c:\users\matheuscrf\google drive\4_periodo\pesquisa_ordenacao\projeto_2_pod_merge_externo\mergeexterno.c
+	"mergeExterno.h"
+	<stdio.h>
+	<time.h>
+

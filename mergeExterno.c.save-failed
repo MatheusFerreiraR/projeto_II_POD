@@ -1,0 +1,12 @@
+#include "mergeExterno.h"
+#include <stdio.h>
+//#include <stdlib.h>
+
+int inicializa(){
+    int n;
+
+    printf("Digite o limite de memoria: ");
+    scanf("%d", &n);
+
+    return 0;
+}
