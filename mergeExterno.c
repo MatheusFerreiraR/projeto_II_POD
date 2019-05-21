@@ -28,29 +28,19 @@ int criarArqMain(char *nome, int tam, int op){
     switch(op){
         case 1:
             for(i=0,k=1; i<tam; i++, k++){
-                fprintf(arq,"%d ",i+1);
-                if(k==100){
-                    fprintf(arq,"\n");
-                    k=0;
-                }
+                fprintf(arq,"%d \n",i+1);
             }
             break;
         case 2:
             for(i=0, k=0; i<tam; i++, k++, j--){
-                fprintf(arq,"%d ",j);
-                if(k==100){
-                    fprintf(arq,"\n");
-                    k=0;
-                }
+                fprintf(arq,"%d \n",j);
+
             }
             break;
         case 3:
             for(i=0, k=0; i<tam; i++, k++, j--){
-                fprintf(arq,"%d ",random_numero(1, tam));
-                if(k==100){
-                    fprintf(arq,"\n");
-                    k=0;
-                }
+                fprintf(arq,"%d \n",random_numero(1, tam));
+
             }
             break;
         default:
@@ -63,6 +53,30 @@ int criarArqMain(char *nome, int tam, int op){
     fclose(arq);
     return 0;
 }
+
+int shellSort(int *vet, int tam) {
+    int i=0 , j , value;
+    int x;
+
+    int gap = 1;
+    while(gap < tam) {
+        gap = 3*gap+1;
+    }
+    while ( gap > 1) {
+        gap /= 3;
+        for(i = gap; i < tam; i++) {
+            value = vet[i];
+            j = i;
+            while (j >= gap && value < vet[j - gap]) {
+                vet[j] = vet [j - gap];
+                j = j - gap;
+            }
+            vet [j] = value;
+        }
+    }
+    return 0;
+}
+
 
 int mergeSortInterno(int *vet, int esq, int dir){
     if(esq < dir){
@@ -102,9 +116,9 @@ int intercalaInterno(int *v, int inicio, int meio, int fim){
 }
 
 int criarArqTemp(char *nome, int *vet, int n){
-    int i;
+    int i, k;
     FILE *arq = fopen(nome, "w"); //alterar para ab
-    for(i = 0; i < n; i++)
+    for(i = 0, k=0; i < n; i++)
         fprintf(arq, "%d ", vet[i]);
 
     fclose(arq);
@@ -115,11 +129,12 @@ int criarArqTemp(char *nome, int *vet, int n){
 int arquivoFinal(char *nome, int *vet, int n){
     int i, j;
     FILE *arq = fopen(nome, "a");
-    printf("oi");
     for(i=0, j=1; i<n; i++, j++){
-        fprintf(arq, "%d ", vet[i]);
-//        if(j == n)
-//            fprintf(arq, "\n");
+        fprintf(arq, "%d \n", vet[i]);
+        if(j == 30){
+            fprintf(arq, "\n");
+            j=0;
+        }
     }
     fclose(arq);
     return 0;
@@ -193,12 +208,11 @@ int intercalaExterno(int numArqs, int n, int K){
         arq[i].buffer = (int*)malloc(K*sizeof(int)); // Aloco a memoria do tamanho do buffer
         preencher(&arq[i], K); // Passando cada arquivo temporario para um vetor dentro da struct
     }
+
     //printf("%d", arq[0].pos);
-  //  strcpy(nomeArqFinal,"arquivo_final/arqFinal.txt"); // Nome e caminho para o arquivo final.
-//    for(i=0; i<10; i++)
-//        printf("%s", nomeArqFinal);
+    //printf("%s", nomeArqFinal);
+
     while(procura(arq, numArqs, K, &menor) == 1){ //
-        printf("oii");
         vet[cont] = menor;
         cont++;
         if(cont == K){ //Se o vetor encher, insere no arquivo final
@@ -208,15 +222,15 @@ int intercalaExterno(int numArqs, int n, int K){
     }
 
     if(cont!=0){ //Se sobrar algo no vetor, insere o restante no arquivo final
-        arquivoFinal(nomeArqFinal, &vet, K);
+        arquivoFinal(nomeArqFinal, &vet, cont);
     }
 
     for(i=0; i<numArqs; i++){
         free(arq[i].buffer); //Desaloca todos os vetores dos arquivos da struct.
     }
 
-    free(arq); //Encerra o arquivo.
-    free(nomeArqFinal);
+    free(arq); //Encerra a struct.
+    free(nomeArqFinal); //Encerra o arquivo final.
     return 0;
 }
 
@@ -224,28 +238,23 @@ int intercalaExterno(int numArqs, int n, int K){
 int criarArqsOrdenados(char *nome, int n){
     int vet[n], numArqs=0, i=0;
     char novoArq[30];
-    FILE *arq = fopen(nome, "rw");
+    FILE *arq = fopen(nome, "r");
 
     while(fscanf(arq, "%d", &vet[i]) != EOF){
         i++;
         if(i == n){
             numArqs++;
             sprintf(novoArq,"arquivos_temp/ArqTemp%d.txt", numArqs);
-            mergeSortInterno(&vet, 0, n-1);
-//            printf("\nordenado:\n");
-//            for(i=0; i<n; i++){
-//                printf("%d ", vet[i]);
-//            }
-//            printf("\n");
-            criarArqTemp(novoArq, &vet, n);
+            shellSort(&vet, n);
+            criarArqTemp(novoArq, &vet, i);
             i = 0;
         }
     }
     if(i > 0){
         numArqs++;
-        sprintf(novoArq,"arquivos_temp/Temp%d.txt", numArqs);
-        mergeSortInterno(&vet, 0, n-1);
-        criarArqTemp(novoArq, &vet, n);
+        sprintf(novoArq,"arquivos_temp/ArqTemp%d.txt", numArqs);
+        shellSort(&vet, n);
+        criarArqTemp(novoArq, &vet, i);
     }
     fclose(arq);
     return numArqs;
@@ -258,14 +267,15 @@ int mergeExterno(char *nome, int n, int tam){ //n = limite da memmoria - tam = t
 
     numArqs = criarArqsOrdenados(nome, n);
     k = n / (numArqs+1);
-
+    if(k == 0)
+        k = 1;
     intercalaExterno(numArqs,n,k);
 
     return 0;
 }
 
 int inicializa(){
-    int n, tam, op;
+    int n, tam, op, i;
     char *nome = {"arq_principal.txt"};
 
     printf("- Digite o limite da memoria: ");
@@ -278,7 +288,31 @@ int inicializa(){
     printf("1- Crescente \n2- Descrescente \n3- Random\n");
     scanf("%d", &op);
 
+
     criarArqMain(nome, tam, op);
-    mergeExterno(nome, n, tam);
+
+    if(n < tam){
+        char novoArq[30];
+        printf("\nArquivo criar. clique qualquer tecla para ordenar.\n");
+        system("pause");
+        mergeExterno(nome, n, tam);
+        printf("\nTecle qualquer tecla para excluir os arquivos temporarios.\n");
+        system("pause");
+
+        for(i=0; i<tam/n; i++){
+            sprintf(novoArq,"arquivos_temp/ArqTemp%d.txt", i+1);
+            remove(novoArq);
+        }
+    }else{
+        int vet[tam];
+        FILE *arq = fopen(nome, "r");
+
+        for(i = 0; i<tam; i++)
+            fscanf(arq, "%d ", &vet[i]);
+
+        mergeSortInterno(&vet, 0, tam-1);
+        for(i=0; i<tam; i++)
+            printf("%d ", vet[i]);
+    }
     return 0;
 }
