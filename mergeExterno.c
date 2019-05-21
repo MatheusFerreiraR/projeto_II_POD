@@ -1,6 +1,8 @@
 #include "mergeExterno.h"
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
+#include <stdlib.h>
 
 int random_numero(int min_num, int max_num){
     int result = 0, low_num = 0, hi_num = 0;
@@ -101,7 +103,7 @@ int intercalaInterno(int *v, int inicio, int meio, int fim){
 
 int criarArqTemp(char *nome, int *vet, int n){
     int i;
-    FILE *arq = fopen(nome, "a");
+    FILE *arq = fopen(nome, "w"); //alterar para ab
     for(i = 0; i < n; i++)
         fprintf(arq, "%d ", vet[i]);
 
@@ -110,16 +112,125 @@ int criarArqTemp(char *nome, int *vet, int n){
     return 0;
 }
 
+int arquivoFinal(char *nome, int *vet, int n){
+    int i, j;
+    FILE *arq = fopen(nome, "a");
+    printf("oi");
+    for(i=0, j=1; i<n; i++, j++){
+        fprintf(arq, "%d ", vet[i]);
+//        if(j == n)
+//            fprintf(arq, "\n");
+    }
+    fclose(arq);
+    return 0;
+}
+
+struct arquivo{
+    FILE *f;
+    int pos, MAX, *buffer;
+};
+
+int preencher(struct arquivo* arq, int K){
+    int i;
+    if(arq->f == NULL){
+        return 0;
+    }
+
+    arq->MAX = 0;
+    arq->pos = 0;
+
+    for(i=0; i<K; i++){
+        if(!feof(arq->f)){
+            fscanf(arq->f, "%d ", &arq->buffer[arq->MAX]);
+            arq->MAX++;
+        }else{
+            fclose(arq->f);
+            arq->f = NULL;
+            break;
+        }
+    }
+
+}
+
+int procura(struct arquivo* arq, int numArqs, int K, int *menor){
+    int i = 0, j = -1;
+
+    for(i=0; i<numArqs; i++){
+        if(arq[i].pos < arq[i].MAX){
+            if(j == -1){
+                j = i;
+            }else{
+                if(arq[i].buffer[arq[i].pos] < arq[j].buffer[arq[j].pos]){
+                    j = i;
+                }
+            }
+        }
+    }
+    if(j != -1){
+        *menor = arq[j].buffer[arq[j].pos];
+        arq[j].pos++;
+        if(arq[j].pos == arq[j].MAX){
+            preencher(&arq[j], K);
+        }
+        return 1;
+    }else{
+        return 0;
+    }
+}
+
+int intercalaExterno(int numArqs, int n, int K){
+    int i, vet[K], j, p, menor, cont = 0;
+    char nomeArq[30], *nomeArqFinal = {"arquivo_final/arqFinal.txt"};
+
+    struct arquivo* arq;
+    arq = (struct arquivo*)malloc(numArqs * sizeof(struct arquivo));
+
+    for(i=0; i<numArqs; i++){
+        sprintf(nomeArq,"arquivos_temp/ArqTemp%d.txt",i+1);
+        arq[i].f = fopen(nomeArq, "r"); // Passo o arquivo para leitura
+        arq[i].MAX = 0;
+        arq[i].pos = 0;
+        arq[i].buffer = (int*)malloc(K*sizeof(int)); // Aloco a memoria do tamanho do buffer
+        preencher(&arq[i], K); // Passando cada arquivo temporario para um vetor dentro da struct
+    }
+    //printf("%d", arq[0].pos);
+  //  strcpy(nomeArqFinal,"arquivo_final/arqFinal.txt"); // Nome e caminho para o arquivo final.
+//    for(i=0; i<10; i++)
+//        printf("%s", nomeArqFinal);
+    while(procura(arq, numArqs, K, &menor) == 1){ //
+        printf("oii");
+        vet[cont] = menor;
+        cont++;
+        if(cont == K){ //Se o vetor encher, insere no arquivo final
+            arquivoFinal(nomeArqFinal, &vet, K);
+            cont=0;
+        }
+    }
+
+    if(cont!=0){ //Se sobrar algo no vetor, insere o restante no arquivo final
+        arquivoFinal(nomeArqFinal, &vet, K);
+    }
+
+    for(i=0; i<numArqs; i++){
+        free(arq[i].buffer); //Desaloca todos os vetores dos arquivos da struct.
+    }
+
+    free(arq); //Encerra o arquivo.
+    free(nomeArqFinal);
+    return 0;
+}
+
+
 int criarArqsOrdenados(char *nome, int n){
     int vet[n], numArqs=0, i=0;
     char novoArq[30];
-    FILE *arq = fopen(nome, "r");
+    FILE *arq = fopen(nome, "rw");
 
     while(fscanf(arq, "%d", &vet[i]) != EOF){
         i++;
         if(i == n){
             numArqs++;
-            sprintf(novoArq,"arquivos_temp/Temp%d.txt", numArqs);
+            sprintf(novoArq,"arquivos_temp/ArqTemp%d.txt", numArqs);
             mergeSortInterno(&vet, 0, n-1);
 //            printf("\nordenado:\n");
 //            for(i=0; i<n; i++){
@@ -146,13 +257,16 @@ int mergeExterno(char *nome, int n, int tam){ //n = limite da memmoria - tam = t
     int numArqs, i, k;
 
     numArqs = criarArqsOrdenados(nome, n);
+    k = n / (numArqs+1);
+
+    intercalaExterno(numArqs,n,k);
 
     return 0;
 }
 
 int inicializa(){
     int n, tam, op;
-    char *nome[] = {"arq_principal.txt"};
+    char *nome = {"arq_principal.txt"};
 
     printf("- Digite o limite da memoria: ");
     scanf("%d", &n);
